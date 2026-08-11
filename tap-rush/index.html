@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Tap Rush</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #111827;
+      color: white;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+
+    #game {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #top {
+      height: 80px;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: #1f2937;
+      font-size: 18px;
+      position: relative;
+      z-index: 5;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .label {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .value {
+      font-size: 24px;
+      font-weight: bold;
+    }
+
+    #arena {
+      position: absolute;
+      top: 80px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+    }
+
+    #target {
+      width: 65px;
+      height: 65px;
+      border-radius: 50%;
+      position: absolute;
+      display: none;
+      cursor: pointer;
+      background: #22c55e;
+      box-shadow: 0 0 25px rgba(34, 197, 94, 0.7);
+    }
+
+    #startScreen,
+    #endScreen {
+      position: absolute;
+      inset: 0;
+      background: rgba(17, 24, 39, 0.96);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      z-index: 10;
+      padding: 25px;
+    }
+
+    #endScreen {
+      display: none;
+    }
+
+    h1 {
+      font-size: 42px;
+      margin: 0 0 10px;
+    }
+
+    p {
+      color: #d1d5db;
+      line-height: 1.5;
+    }
+
+    button {
+      border: none;
+      border-radius: 14px;
+      padding: 15px 35px;
+      font-size: 18px;
+      font-weight: bold;
+      background: #22c55e;
+      color: white;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    button:active {
+      transform: scale(0.95);
+    }
+
+    #finalScore {
+      font-size: 50px;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+
+<body>
+
+<div id="game">
+
+  <div id="top">
+    <div class="stat">
+      <div class="label">SCORE</div>
+      <div class="value" id="score">0</div>
+    </div>
+
+    <div class="stat">
+      <div class="label">TIME</div>
+      <div class="value" id="time">15</div>
+    </div>
+
+    <div class="stat">
+      <div class="label">BEST</div>
+      <div class="value" id="best">0</div>
+    </div>
+  </div>
+
+  <div id="arena">
+    <div id="target"></div>
+  </div>
+
+  <div id="startScreen">
+    <h1>🎯 Tap Rush</h1>
+
+    <p>
+      Tap the target as fast as you can!
+      <br>
+      You have 15 seconds.
+    </p>
+
+    <button id="startButton">START GAME</button>
+  </div>
+
+  <div id="endScreen">
+    <h1>🔥 Game Over</h1>
+
+    <p>Your Score</p>
+
+    <div id="finalScore">0</div>
+
+    <button id="againButton">PLAY AGAIN</button>
+  </div>
+
+</div>
+
+<script>
+  const target = document.getElementById("target");
+  const arena = document.getElementById("arena");
+
+  const scoreElement = document.getElementById("score");
+  const timeElement = document.getElementById("time");
+  const bestElement = document.getElementById("best");
+
+  const startScreen = document.getElementById("startScreen");
+  const endScreen = document.getElementById("endScreen");
+
+  const startButton = document.getElementById("startButton");
+  const againButton = document.getElementById("againButton");
+
+  const finalScore = document.getElementById("finalScore");
+
+  let score = 0;
+  let time = 15;
+  let timer = null;
+
+  let best = Number(localStorage.getItem("tapRushBest") || 0);
+
+  bestElement.textContent = best;
+
+  function moveTarget() {
+    const targetSize = 65;
+
+    const maxX = arena.clientWidth - targetSize;
+    const maxY = arena.clientHeight - targetSize;
+
+    const x = Math.random() * maxX;
+    const y = Math.random() * maxY;
+
+    target.style.left = x + "px";
+    target.style.top = y + "px";
+
+    const colors = [
+      "#22c55e",
+      "#3b82f6",
+      "#f97316",
+      "#ec4899",
+      "#a855f7",
+      "#eab308"
+    ];
+
+    target.style.background =
+      colors[Math.floor(Math.random() * colors.length)];
+
+    target.style.display = "block";
+  }
+
+  function startGame() {
+    score = 0;
+    time = 15;
+
+    scoreElement.textContent = score;
+    timeElement.textContent = time;
+
+    startScreen.style.display = "none";
+    endScreen.style.display = "none";
+
+    moveTarget();
+
+    clearInterval(timer);
+
+    timer = setInterval(() => {
+      time--;
+
+      timeElement.textContent = time;
+
+      if (time <= 0) {
+        endGame();
+      }
+    }, 1000);
+  }
+
+  function hitTarget() {
+    if (time <= 0) return;
+
+    score++;
+
+    scoreElement.textContent = score;
+
+    moveTarget();
+  }
+
+  function endGame() {
+    clearInterval(timer);
+
+    target.style.display = "none";
+
+    if (score > best) {
+      best = score;
+
+      localStorage.setItem(
+        "tapRushBest",
+        best
+      );
+
+      bestElement.textContent = best;
+    }
+
+    finalScore.textContent = score;
+
+    endScreen.style.display = "flex";
+  }
+
+  target.addEventListener("pointerdown", hitTarget);
+
+  startButton.addEventListener("click", startGame);
+
+  againButton.addEventListener("click", startGame);
+</script>
+
+</body>
+</html>
